@@ -13,6 +13,7 @@
 #include "esp_gatt_common_api.h"
 #include "esp_event.h"
 #include "common.h"
+#include"storage.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,7 +35,7 @@ typedef enum {
 
 esp_err_t bluetooth_controller_init();
 esp_err_t bluetooth_controller_send_notification(ble_ctl_handle_t ble_ctl_handle, uint8_t* data, uint16_t len);
-esp_err_t bluetooth_controller_get_attribute_value(ble_ctl_handle_t handle, uint16_t* length, uint8_t** value);
+esp_err_t bluetooth_controller_get_attribute_value(ble_ctl_handle_t handle, uint16_t* length, const uint8_t** value);
 esp_err_t bluetooth_controller_set_attribute_value(ble_ctl_handle_t handle, uint16_t length, uint8_t* value);
 bool is_bluetooth_controller_initialized();
 

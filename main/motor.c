@@ -1,6 +1,5 @@
 #include "motor.h"
 
-
 static esp_err_t init_gpio(uint8_t gpio)
 {
     esp_err_t ret;
@@ -46,7 +45,7 @@ static esp_err_t init_pwm(ledc_channel_t channel, uint8_t gpio)
     return ret;
 }
 
-esp_err_t motor_init(motor_config_t *config, motor_handle_t motor_hdl) 
+esp_err_t motor_init(motor_config_t *config) 
 {
     esp_err_t ret; 
     ret = init_gpio(GPIO_OUTPUT_STBY);
@@ -73,30 +72,28 @@ esp_err_t motor_init(motor_config_t *config, motor_handle_t motor_hdl)
     gpio_set_level(GPIO_OUTPUT_PIN_2, LOW);
     gpio_set_level(GPIO_OUTPUT_STBY, HIGH);
 
-    // initialize esp event loop handle
-    esp_event_loop_args_t loop_args = {
-        .queue_size = 5,
-        .task_name = "motor_task",
-        .task_priority = 5,
-        .task_stack_size = 2048,
-        .task_core_id = 0,
-    };
-    ret = esp_event_loop_create(&loop_args, &motor_hdl);
-    if (ret != ESP_OK)
+    ret = storage_init();
+
+    uint8_t speed; 
+    storage_getu8_or_default(STORAGE_KEY_SPEED, &speed, 50);
+
+    if( speed > 0 ) 
     {
-        ESP_LOGE(GATTS_TABLE_TAG, "Error creating event loop");
-        return ret;
+        motor_set_speed(speed);
     }
+    ESP_ERROR_CHECK(ret);
+
     return ESP_OK;
 }
 
-esp_err_t motor_set_speed(uint32_t speed)
+esp_err_t motor_set_speed(uint8_t speed)
 {
+    uint32_t amplfied_speed = speed * MOTOR_SPEED_MAXIMUM / 100;
     esp_err_t ret;
-    ret = ledc_set_duty(MOTOR_MODE, LEDC_CHANNEL_0, speed);
+    ret = ledc_set_duty(MOTOR_MODE, LEDC_CHANNEL_0, amplfied_speed);
     if (ret != ESP_OK)
     {
-        ESP_LOGE(GATTS_TABLE_TAG, "Error setting duty %d", (int)speed);
+        ESP_LOGE(GATTS_TABLE_TAG, "Error setting duty %d", (int)amplfied_speed);
         return ret;
     }
     ret = gpio_set_level(GPIO_OUTPUT_PIN_1, HIGH); 
@@ -114,7 +111,7 @@ esp_err_t motor_set_speed(uint32_t speed)
     ret = ledc_update_duty(MOTOR_MODE, LEDC_CHANNEL_0);
     if (ret != ESP_OK)
     {
-        ESP_LOGE(GATTS_TABLE_TAG, "Error updating duty %d", (int)speed);
+        ESP_LOGE(GATTS_TABLE_TAG, "Error updating duty %d", (int)amplfied_speed);
         return ret;
     }
     return ESP_OK;

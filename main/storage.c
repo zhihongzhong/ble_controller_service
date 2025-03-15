@@ -42,6 +42,13 @@ esp_err_t storage_get_data_u8(const char* key, uint8_t* data) {
     return ESP_OK;
 }
 
+void storage_getu8_or_default(const char* key, uint8_t* data, uint8_t default_value) {
+    esp_err_t ret = storage_get_data_u8(key, data);
+    if (ret != ESP_OK) {
+        *data = default_value;
+    }
+}
+
 esp_err_t storage_set_data_u8(const char* key, uint8_t data) {
     nvs_handle_t my_handle;
     esp_err_t ret = nvs_open("storage", NVS_READWRITE, &my_handle);

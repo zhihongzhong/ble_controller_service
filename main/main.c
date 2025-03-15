@@ -3,11 +3,12 @@
  *
  * SPDX-License-Identifier: CC0-1.0
  */
-
 #include "bluetooth_controller.h"
 #include "motor.h"
+#include "task_temperature.h"
+
 void app_main(void)
 {
-    bluetooth_controller_handle_t bluetooth_controller_hdl;
-    bluetooth_controller_init(&bluetooth_controller_hdl);
+    bluetooth_controller_init();
+    temperature_task_init();    
 }

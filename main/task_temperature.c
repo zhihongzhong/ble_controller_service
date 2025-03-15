@@ -8,16 +8,18 @@ static temperature_sensor_handle_t temp_sensor_hdl;
 
 bool is_auto_mode_enabled()
 {
+    if( is_bluetooth_controller_initialized() == false ) return false;
     uint16_t length; 
-    uint8_t* value;
+    const uint8_t* value;
     bluetooth_controller_get_attribute_value(BLE_CTL_CHAR_VAL_MODE, &length, &value);
-    return *value;
+    return *value == 0x01;
 }
 
 bool is_notification_enabled()
 {
+    if( is_bluetooth_controller_initialized() == false ) return false;
     uint16_t length; 
-    uint8_t* value;
+    const uint8_t* value;
     bluetooth_controller_get_attribute_value(BLE_CTL_CHAR_DESC_TEMP, &length, &value);
     if( length == 2 ) 
     {
@@ -26,7 +28,7 @@ bool is_notification_enabled()
         {
             return true;
         }
-    } 
+    }
     return false; 
 }
 
@@ -49,13 +51,12 @@ void temperature_task(void* arg)
     {
         vTaskDelay(1000 / portTICK_PERIOD_MS);
         temperature_sensor_get_celsius(temp_sensor_hdl, &temp_val); 
-        uint16_t temp_val_16 = (temp_val - 20) / 30.0 * 4095;
+        uint8_t motor_speed = (temp_val - 20) / 30.0 * 100;
         uint8_t temp_val_8 = (uint8_t)temp_val;
 
-        
         if( is_auto_mode_enabled() ) 
         {
-            motor_set_speed(temp_val_16);
+            motor_set_speed(motor_speed);
         }
         bluetooth_controller_set_attribute_value(BLE_CTL_CHAR_VAL_TEMP, sizeof(uint8_t), &temp_val_8);
         if( is_notification_enabled() )

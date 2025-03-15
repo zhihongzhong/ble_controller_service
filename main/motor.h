@@ -5,6 +5,7 @@
 #include "esp_log.h"
 #include "esp_err.h"
 #include "esp_event.h"
+#include "storage.h"
 
 #define MOTOR_SPEED_MAXIMUM 4095
 #define MOTOR_SPEED_MIDDLE 2048
@@ -33,8 +34,6 @@ typedef struct motor_config
 } motor_config_t;
 
 
-typedef void* motor_handle_t;
-
 #define MOTOR_CONFIG_DEFAULT()   \
 {                                \
     .speed = MOTOR_SPEED_MIDDLE, \
@@ -43,8 +42,12 @@ typedef void* motor_handle_t;
     .gpio_pin_2 = GPIO_OUTPUT_PIN_2, \
     .gpio_ena = GPIO_OUTPUT_ENA, \
 }
-esp_err_t motor_init(motor_config_t *config, motor_handle_t motor_hdl);
-esp_err_t motor_set_speed(uint32_t speed);
+esp_err_t motor_init(motor_config_t *config);
+
+/**
+ * @param {uint8_t} speed - speed of the motor, 0 - 100
+ * */ 
+esp_err_t motor_set_speed(uint8_t speed);
 esp_err_t motor_sleep();
 esp_err_t motor_wake();
 
