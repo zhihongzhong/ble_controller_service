@@ -116,3 +116,38 @@ esp_err_t motor_set_speed(uint8_t speed)
     }
     return ESP_OK;
 }
+
+
+esp_err_t motor_sleep()
+{
+    esp_err_t ret;
+    ret = gpio_set_level(GPIO_OUTPUT_STBY, LOW);
+    if (ret != ESP_OK)
+    {
+        ESP_LOGE(GATTS_TABLE_TAG, "Error setting GPIO %d", GPIO_OUTPUT_STBY);
+        return ret;
+    }
+    return ESP_OK;
+}
+
+esp_err_t motor_wake()
+{
+    esp_err_t ret;
+    ret = gpio_set_level(GPIO_OUTPUT_STBY, HIGH);
+    if (ret != ESP_OK)
+    {
+        ESP_LOGE(GATTS_TABLE_TAG, "Error setting GPIO %d", GPIO_OUTPUT_STBY);
+        return ret;
+    }
+    return ESP_OK;
+}
+
+bool is_motor_initialized()
+{
+    return gpio_get_level(GPIO_OUTPUT_STBY) == HIGH;
+}
+
+bool is_motor_sleeping()
+{
+    return gpio_get_level(GPIO_OUTPUT_STBY) == LOW;
+}
