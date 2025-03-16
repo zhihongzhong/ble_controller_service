@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "motor.h": "c",
+        "temperature_sensor.h": "c"
+    }
+}

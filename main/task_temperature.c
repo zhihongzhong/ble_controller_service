@@ -5,7 +5,6 @@
 static TaskHandle_t temperature_task_hdl;
 static temperature_sensor_handle_t temp_sensor_hdl;
 
-
 bool is_auto_mode_enabled()
 {
     if( is_bluetooth_controller_initialized() == false ) return false;
@@ -58,7 +57,10 @@ void temperature_task(void* arg)
         {
             motor_set_speed(motor_speed);
         }
-        bluetooth_controller_set_attribute_value(BLE_CTL_CHAR_VAL_TEMP, sizeof(uint8_t), &temp_val_8);
+        if( is_bluetooth_controller_initialized() )
+        {
+            bluetooth_controller_set_attribute_value(BLE_CTL_CHAR_VAL_TEMP, sizeof(uint8_t), &temp_val_8);
+        }
         if( is_notification_enabled() )
         {
             esp_err_t ret = bluetooth_controller_send_notification(BLE_CTL_CHAR_VAL_TEMP, &temp_val_8, sizeof(uint8_t));

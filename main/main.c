@@ -6,6 +6,7 @@
 #include "bluetooth_controller.h"
 #include "motor.h"
 #include "task_temperature.h"
+#include "task_hibernate.h"
 
 void app_main(void)
 {
