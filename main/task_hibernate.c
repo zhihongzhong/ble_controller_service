@@ -14,18 +14,7 @@ void hibernate_system();
 bool is_countdown_enabled() 
 {
     if( is_bluetooth_controller_initialized() == false ) return false;
-    uint16_t length; 
-    const uint8_t* value;
-    bluetooth_controller_get_attribute_value(BLE_CTL_CHAR_DESC_COUNTDOWN, &length, &value);
-    if( length == 2 ) 
-    {
-        uint16_t countdown_client_conf = value[1] << 8 | value[0];
-        if( countdown_client_conf == 0x01 || countdown_client_conf == 0x02)
-        {
-            return true;
-        }
-    }
-    return false; 
+    return true; 
 }
 /**
  * @param arg - countdown time in seconds, to hibernate the system  
@@ -43,15 +32,19 @@ void hibernate_task(void *arg)
             // send notification to bluetoothe client; 
             bluetooth_controller_send_notification(BLE_CTL_CHAR_VAL_COUNTDOWN, (uint8_t*)&i, sizeof(uint16_t));
         }
-        else 
-        {
-            // kill the task 
-            vTaskDelete(hibernate_task_hdl);
-        }
     }
     xTaskCreate(hibernate_system, "hibernate_system", 2048, NULL, 10, NULL);
     vTaskDelete(hibernate_task_hdl);
 }
+
+esp_err_t delete_hibernate_task_if_exists()
+{
+    if( hibernate_task_hdl != NULL ) 
+    {
+        vTaskDelete(hibernate_task_hdl);
+    }
+    return ESP_OK;
+};
 
 esp_err_t create_hibernate_task(uint16_t countdown)
 {

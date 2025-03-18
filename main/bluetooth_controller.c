@@ -5,6 +5,7 @@
 #include "motor.h"
 #include "driver/temperature_sensor.h"
 #include "task_hibernate.h"
+#include "instruction.h"
 
 static uint8_t adv_config_done = 0; 
 
@@ -42,14 +43,16 @@ const static uint16_t GATTS_CHAR_VAL_SPEED_UUID = 0xff01;
 const static uint16_t GATTS_CHAR_VAL_MODE_UUID = 0xff02;
 const static uint16_t GATTS_CHAR_VAL_TEMP_UUID = 0xff03;
 const static uint16_t GATTS_CHAR_VAL_COUNTDOWN_UUID = 0xff04;
+const static uint16_t GATTS_CHAR_VAL_INST_UUID = 0xff05;
 
 static const uint16_t primary_service_uuid = ESP_GATT_UUID_PRI_SERVICE;
 static const uint16_t character_declaration_uuid = ESP_GATT_UUID_CHAR_DECLARE;
 static const uint16_t character_client_config_uuid = ESP_GATT_UUID_CHAR_CLIENT_CONFIG;
 
 static const uint16_t char_prop_notify = ESP_GATT_CHAR_PROP_BIT_NOTIFY;
-static const uint16_t char_prop_read_write = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_READ;
+// static const uint16_t char_prop_read_write = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_READ;
 // static const uint8_t char_prop_read_write_notify = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
+static const uint16_t char_prop_write = ESP_GATT_CHAR_PROP_BIT_WRITE;
 
 uint16_t gatts_handle_table[BLE_CTL_NUM_HANDLE];
 
@@ -93,9 +96,13 @@ esp_err_t create_gatts_attr_db(esp_gatts_attr_db_t** gatt_db)
     uint8_t speed_val;
     uint8_t mode_val;
     uint8_t temp_val = 0;
+    uint8_t speed_client_conf[2] = {0x00, 0x00}; 
+    uint8_t mode_client_conf[2] = {0x00, 0x00}; 
     uint8_t temp_client_conf[2] = {0x000, 0x000};
     uint8_t countdown_client_conf[2] = {0x000, 0x000};
     uint16_t countdown_value = 0x00; 
+
+    uint8_t inst_val[4] = {0x00, 0x00, 0x00, 0x00}; 
 
     esp_err_t ret = storage_get_data_u8(STORAGE_KEY_SPEED, &speed_val); 
     if( ret != ESP_OK )
@@ -133,7 +140,7 @@ esp_err_t create_gatts_attr_db(esp_gatts_attr_db_t** gatt_db)
         .perm = ESP_GATT_PERM_READ,
         .max_length = CHAR_DECLARATION_SIZE,
         .length = CHAR_DECLARATION_SIZE,
-        .value = (uint8_t*)&char_prop_read_write,
+        .value = (uint8_t*)&char_prop_notify,
     };
     // Characteristic Value - Speed
     (*gatt_db)[BLE_CTL_CHAR_VAL_SPEED].attr_control.auto_rsp = ESP_GATT_AUTO_RSP;
@@ -146,6 +153,16 @@ esp_err_t create_gatts_attr_db(esp_gatts_attr_db_t** gatt_db)
         .value = (uint8_t*)&speed_val
     };
 
+    (*gatt_db)[BLE_CTL_CHAR_DESC_SPEED].attr_control.auto_rsp = ESP_GATT_AUTO_RSP;
+    (*gatt_db)[BLE_CTL_CHAR_DESC_SPEED].att_desc = (esp_attr_desc_t) {
+        .uuid_length = ESP_UUID_LEN_16,
+        .uuid_p = (uint8_t*)&character_client_config_uuid,
+        .perm = ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+        .max_length = sizeof(uint16_t),
+        .length = sizeof(uint16_t),
+        .value = (uint8_t*)&speed_client_conf,
+    };
+
     // Characteristic Declaration 
     (*gatt_db)[BLE_CTL_CHAR_DECL_MODE].attr_control.auto_rsp = ESP_GATT_AUTO_RSP;
     (*gatt_db)[BLE_CTL_CHAR_DECL_MODE].att_desc = (esp_attr_desc_t) {
@@ -154,7 +171,7 @@ esp_err_t create_gatts_attr_db(esp_gatts_attr_db_t** gatt_db)
         .perm = ESP_GATT_PERM_READ,
         .max_length = CHAR_DECLARATION_SIZE,
         .length = CHAR_DECLARATION_SIZE,
-        .value = (uint8_t*)&char_prop_read_write,
+        .value = (uint8_t*)&char_prop_notify,
     };
 
     // Characteristic Value - Mode
@@ -166,6 +183,17 @@ esp_err_t create_gatts_attr_db(esp_gatts_attr_db_t** gatt_db)
         .max_length = GATTS_DEMO_CHAR_VAL_LEN_MAX,
         .length = sizeof(mode_val),
         .value = (uint8_t*)&mode_val
+    };
+
+    // Characteristic Descriptor 
+    (*gatt_db)[BLE_CTL_CHAR_DESC_MODE].attr_control.auto_rsp = ESP_GATT_AUTO_RSP;
+    (*gatt_db)[BLE_CTL_CHAR_DESC_MODE].att_desc = (esp_attr_desc_t) {
+        .uuid_length = ESP_UUID_LEN_16,
+        .uuid_p = (uint8_t*)&character_client_config_uuid,
+        .perm = ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
+        .max_length = sizeof(uint16_t),
+        .length = sizeof(uint16_t),
+        .value = (uint8_t*)&mode_client_conf,
     };
 
     // Characteristic Declaration
@@ -229,6 +257,27 @@ esp_err_t create_gatts_attr_db(esp_gatts_attr_db_t** gatt_db)
         .length = sizeof(uint16_t),
         .value = (uint8_t*)&countdown_client_conf,
     };
+
+    (*gatt_db)[BLE_CTL_CHAR_DECL_INST].attr_control.auto_rsp = ESP_GATT_AUTO_RSP;
+    (*gatt_db)[BLE_CTL_CHAR_DECL_INST].att_desc = (esp_attr_desc_t) {
+        .uuid_length = ESP_UUID_LEN_16,
+        .uuid_p = (uint8_t*)&character_declaration_uuid,
+        .perm = ESP_GATT_PERM_READ,
+        .max_length = CHAR_DECLARATION_SIZE,
+        .length = CHAR_DECLARATION_SIZE,
+        .value = (uint8_t*)&char_prop_write,
+    };
+
+    (*gatt_db)[BLE_CTL_CHAR_VAL_INST].attr_control.auto_rsp = ESP_GATT_AUTO_RSP;
+    (*gatt_db)[BLE_CTL_CHAR_VAL_INST].att_desc = (esp_attr_desc_t) {
+        .uuid_length = ESP_UUID_LEN_16,
+        .uuid_p = (uint8_t*)&GATTS_CHAR_VAL_INST_UUID,
+        .perm = ESP_GATT_PERM_WRITE,
+        .max_length = GATTS_DEMO_CHAR_VAL_LEN_MAX,
+        .length = sizeof(inst_val),
+        .value = (uint8_t*)&inst_val
+    };
+
     return ESP_OK;
 }
 
@@ -351,43 +400,39 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
         case ESP_GATTS_WRITE_EVT:
             ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_WRITE_EVT, handle = %d", param->write.handle);
             ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_WRITE_EVT, is PREP = %d", param->write.is_prep);
-
             if( !param->write.is_prep )
             {
+                
                 ESP_LOGI(GATTS_TABLE_TAG, "GATT_WRITE_EVT, value len %d, value :", param->write.len);
                 esp_log_buffer_hex(GATTS_TABLE_TAG, param->write.value, param->write.len);
-                if( param->write.len == 1 && param->write.handle == gatts_handle_table[BLE_CTL_CHAR_VAL_SPEED] )
+                if( param->write.len == 4 && param->write.handle == gatts_handle_table[BLE_CTL_CHAR_VAL_INST])
                 {
-                    const uint8_t* mode_val = NULL;
-                    uint16_t length = 0;
-                    bluetooth_controller_get_attribute_value(BLE_CTL_CHAR_VAL_MODE, &length, &mode_val);
-                    if( *mode_val == 1) 
+                    ESP_LOGI(GATTS_TABLE_TAG, "GATT_WRITE_EVT, Write Instruction");
+                    parse_instruction(param->write.value, param->write.len);
+                }
+                else if( param->write.handle == gatts_handle_table[BLE_CTL_CHAR_DESC_SPEED]) 
+                {
+                    uint16_t conf = param->write.value[1] << 8 | param->write.value[0];
+                    if( conf > 0x00 ) 
                     {
-                        break;
+                        const uint8_t *speed_val; 
+                        uint16_t len; 
+                        bluetooth_controller_get_attribute_value(BLE_CTL_CHAR_VAL_SPEED, &len, &speed_val); 
+                        bluetooth_controller_send_notification(BLE_CTL_CHAR_VAL_SPEED, (uint8_t*)speed_val, len); 
                     }
-                    uint8_t speed = param->write.value[0];
-                    motor_set_speed(speed); 
-                    storage_set_data_u8(STORAGE_KEY_SPEED, speed);
+                    break; 
                 }
-                else if( param->write.len == 1 && param->write.handle == gatts_handle_table[BLE_CTL_CHAR_VAL_MODE] )
+                else if( param->write.handle == gatts_handle_table[BLE_CTL_CHAR_DESC_MODE] ) 
                 {
-                    uint8_t mode = param->write.value[0];
-                    storage_set_data_u8(STORAGE_KEY_MODE, mode);
-                }
-                else if( param->write.len == 2 && param->write.handle == gatts_handle_table[BLE_CTL_CHAR_DESC_TEMP])
-                {
-                    uint16_t temp_client_conf = param->write.value[1] << 8 | param->write.value[0];
-                    ESP_LOGI(GATTS_TABLE_TAG, "temp_client_conf = %d", temp_client_conf);
-                }
-                else if( param->write.len == 2 && param->write.handle == gatts_handle_table[BLE_CTL_CHAR_DESC_COUNTDOWN])
-                {
-                    uint16_t countdown_client_conf = param->write.value[1] << 8 | param->write.value[0];
-                    ESP_LOGI(GATTS_TABLE_TAG, "countdown_client_conf = %d", countdown_client_conf);
-                    if( countdown_client_conf == 0x01 )
+                    uint16_t conf = param->write.value[1] << 8 | param->write.value[0];
+                    if( conf > 0x00 ) 
                     {
-                        uint16_t countdown_value = 300; 
-                        create_hibernate_task(countdown_value);
+                        const uint8_t *mode_val; 
+                        uint16_t len; 
+                        bluetooth_controller_get_attribute_value(BLE_CTL_CHAR_VAL_MODE, &len, &mode_val); 
+                        bluetooth_controller_send_notification(BLE_CTL_CHAR_VAL_MODE, (uint8_t*)mode_val, len); 
                     }
+                    break; 
                 }
             }
             break;
