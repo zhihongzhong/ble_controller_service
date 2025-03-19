@@ -60,21 +60,26 @@ typedef struct {
     uint16_t conn_id; 
     esp_gatt_if_t gatts_if;
     bool initialized;
+    uint8_t* remote_addr;
 } bluetooth_connection_t; 
 
 static bluetooth_connection_t connection_info; 
 
-void initialize_connection( esp_gatt_if_t gatts_if, uint16_t conn_id)
+void initialize_connection( esp_gatt_if_t gatts_if, uint16_t conn_id, uint8_t* remote)
 {
     connection_info.conn_id = conn_id;
     connection_info.gatts_if = gatts_if;
+    connection_info.remote_addr = remote;
     connection_info.initialized = true;
 }
 
 void uninitialize_connection()
 {
+    if(!connection_info.initialized) return;
+    ESP_ERROR_CHECK(esp_ble_gap_disconnect(connection_info.remote_addr));
     connection_info.conn_id = 0;
     connection_info.gatts_if = 0;
+    connection_info.remote_addr = 0;
     connection_info.initialized = false;
 }
 
@@ -390,7 +395,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
             conn_params.min_int = 0x10;
             conn_params.timeout = 400;
             esp_ble_gap_update_conn_params(&conn_params);
-            initialize_connection(gatts_if, param->connect.conn_id);
+            initialize_connection(gatts_if, param->connect.conn_id, param->connect.remote_bda);
             break;
         case ESP_GATTS_DISCONNECT_EVT:
             ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_DISCONNECT_EVT, reason = %d", param->disconnect.reason);

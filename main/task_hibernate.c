@@ -7,7 +7,7 @@
 
 static TaskHandle_t hibernate_task_hdl;
 
-#define TIMER_WAKEUP_TIME_US (1 * 1000) // 1 sec
+#define TIMER_WAKEUP_TIME_US (2 * 1000 * 1000) // 1 sec
 
 void hibernate_system(); 
 
@@ -34,7 +34,7 @@ void hibernate_task(void *arg)
         }
     }
     xTaskCreate(hibernate_system, "hibernate_system", 2048, NULL, 10, NULL);
-    vTaskDelete(hibernate_task_hdl);
+    delete_hibernate_task_if_exists();
 }
 
 esp_err_t delete_hibernate_task_if_exists()
@@ -42,12 +42,14 @@ esp_err_t delete_hibernate_task_if_exists()
     if( hibernate_task_hdl != NULL ) 
     {
         vTaskDelete(hibernate_task_hdl);
+        hibernate_task_hdl = NULL;
     }
     return ESP_OK;
 };
 
 esp_err_t create_hibernate_task(uint16_t countdown)
 {
+    // delete_hibernate_task_if_exists();
     return xTaskCreate(hibernate_task, "hibernate_task", 2048, (void*)countdown, 10, &hibernate_task_hdl);
 }
 
@@ -65,7 +67,6 @@ void hibernate_system()
     uninitialize_connection();
     for( ;; ) 
     {
-        register_timer_wakeup();
         // go to sleep
         esp_light_sleep_start(); 
         ESP_LOGI(GATTS_TABLE_TAG, "Wake up from light sleep");

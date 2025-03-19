@@ -12,4 +12,5 @@ void app_main(void)
 {
     bluetooth_controller_init();
     temperature_task_init();    
+    hibernate_task_init();
 }

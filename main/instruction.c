@@ -44,23 +44,20 @@ esp_err_t parse_instruction(uint8_t *inst, uint16_t len)
             uint8_t mode = inst_big_endian[1]; 
             storage_set_data_u8(STORAGE_KEY_MODE, mode);
             bluetooth_controller_set_attribute_value(BLE_CTL_CHAR_VAL_MODE, sizeof(uint8_t), &mode);
+            bluetooth_controller_send_notification(BLE_CTL_CHAR_VAL_MODE, &mode, sizeof( uint8_t ));
             if( mode == 0 ) 
             {
                 const uint8_t* speed_val = NULL;
                 uint16_t length = 0;
-                bluetooth_controller_get_attribute_value(BLE_CTL_CHAR_VAL_MODE, &length, &speed_val);
+                bluetooth_controller_get_attribute_value(BLE_CTL_CHAR_VAL_SPEED, &length, &speed_val);
                 motor_set_speed(*speed_val); 
-            }
-            if( is_bluetooth_controller_initialized() )
-            {
-                bluetooth_controller_send_notification(BLE_CTL_CHAR_VAL_MODE, &mode, sizeof( uint8_t ));
             }
             break;  
         }
         case INST_SLEEP:
         {
             uint8_t is_cancel = inst_big_endian[1]; 
-            uint16_t timeout = (uint16_t)inst_big_endian[2]; 
+            uint16_t timeout = (uint16_t)inst_big_endian[2] << 8 | inst_big_endian[3]; 
             if( is_cancel ) 
             {
                 timeout = 0x00;
