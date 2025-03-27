@@ -1,9 +1,9 @@
 #include "task_temperature.h"
-#include "driver/temperature_sensor.h"
+#include "temperature.h"
 #include "common.h"
+#include "speed_calculator.h"
 
 static TaskHandle_t temperature_task_hdl;
-static temperature_sensor_handle_t temp_sensor_hdl;
 
 bool is_auto_mode_enabled()
 {
@@ -34,24 +34,15 @@ bool is_notification_enabled()
 void temperature_task(void* arg)
 {
 
-    while( !is_bluetooth_controller_initialized() ) {
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-    }
-    float temp_val = 0;
-    // install temperature sensor 
-    temperature_sensor_config_t config = {
-        .range_min = 20, 
-        .range_max = 50,
-        .clk_src = TEMPERATURE_SENSOR_CLK_SRC_DEFAULT,
-    }; 
-    ESP_ERROR_CHECK(temperature_sensor_install(&config, &temp_sensor_hdl));
-    ESP_ERROR_CHECK(temperature_sensor_enable(temp_sensor_hdl));
+    float humidity_val = 0.0, temperature_value = 0.0;
     for(;;)
     {
         vTaskDelay(1000 / portTICK_PERIOD_MS);
-        temperature_sensor_get_celsius(temp_sensor_hdl, &temp_val); 
-        uint8_t motor_speed = (temp_val - 20) / 30.0 * 100;
-        uint8_t temp_val_8 = (uint8_t)temp_val;
+        temperature_module_read(&temperature_value, &humidity_val);
+        float motor_speedf = calculate_control_value(temperature_value, humidity_val);
+        uint8_t motor_speed = (uint8_t)motor_speedf;
+        uint8_t temp_val_8 = (uint8_t)temperature_value;
+        ESP_LOGI(GATTS_TABLE_TAG, "Temperature: %.2f, Humidity: %.2f, Speed: %f ", temperature_value, humidity_val, motor_speedf);
 
         if( is_auto_mode_enabled() ) 
         {
@@ -69,8 +60,10 @@ void temperature_task(void* arg)
     }
 }
 
+
 esp_err_t temperature_task_init()
 {
+    temperature_module_init();
     xTaskCreate(temperature_task, "temperature_task", 2048, NULL, 5, &temperature_task_hdl);
     return ESP_OK;
 }
@@ -78,6 +71,5 @@ esp_err_t temperature_task_init()
 esp_err_t temperature_task_deinit()
 {
     vTaskDelete(temperature_task_hdl);
-    temperature_sensor_uninstall(temp_sensor_hdl);
     return ESP_OK;
 }

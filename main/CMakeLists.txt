@@ -6,6 +6,8 @@ set(CompileList
     task_temperature.c
     task_hibernate.c
     instruction.c
+    temperature.c
+    speed_calculator.c
 ) 
 
 idf_component_register(SRCS "${CompileList}"
