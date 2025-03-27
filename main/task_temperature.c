@@ -34,6 +34,9 @@ bool is_notification_enabled()
 void temperature_task(void* arg)
 {
 
+    while( !is_bluetooth_controller_initialized() ) {
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+    }
     float humidity_val = 0.0, temperature_value = 0.0;
     for(;;)
     {
