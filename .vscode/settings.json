@@ -1,6 +1,16 @@
 {
     "files.associations": {
         "motor.h": "c",
-        "temperature_sensor.h": "c"
+        "temperature_sensor.h": "c",
+        "type_traits": "c",
+        "ratio": "c",
+        "system_error": "c",
+        "array": "c",
+        "functional": "c",
+        "tuple": "c",
+        "utility": "c",
+        "*.tcc": "c",
+        "regex": "c",
+        "esp_check.h": "c"
     }
 }
