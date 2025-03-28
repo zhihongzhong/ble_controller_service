@@ -50,6 +50,7 @@ esp_err_t parse_instruction(uint8_t *inst, uint16_t len)
                 const uint8_t* speed_val = NULL;
                 uint16_t length = 0;
                 bluetooth_controller_get_attribute_value(BLE_CTL_CHAR_VAL_SPEED, &length, &speed_val);
+                bluetooth_controller_send_notification(BLE_CTL_CHAR_VAL_SPEED, speed_val, sizeof( uint8_t ));
                 motor_set_speed(*speed_val); 
             }
             break;  

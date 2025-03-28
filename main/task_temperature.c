@@ -46,7 +46,7 @@ void temperature_task(void* arg)
         uint8_t motor_speed = (uint8_t)motor_speedf;
         uint8_t temp_val_8 = (uint8_t)temperature_value;
         ESP_LOGI(GATTS_TABLE_TAG, "Temperature: %.2f, Humidity: %.2f, Speed: %f ", temperature_value, humidity_val, motor_speedf);
-        uint8_t speed_and_humidity[2] = { (uint8_t)temp_val_8, (uint8_t)humidity_val};
+        uint8_t temperature_and_humidity[2] = { (uint8_t)temp_val_8, (uint8_t)humidity_val};
 
         if( is_auto_mode_enabled() ) 
         {
@@ -54,11 +54,11 @@ void temperature_task(void* arg)
         }
         if( is_bluetooth_controller_initialized() )
         {
-            bluetooth_controller_set_attribute_value(BLE_CTL_CHAR_VAL_TEMP, sizeof(uint16_t), &speed_and_humidity);
+            bluetooth_controller_set_attribute_value(BLE_CTL_CHAR_VAL_TEMP, sizeof(uint16_t), &temperature_and_humidity);
         }
         if( is_notification_enabled() )
         {
-            esp_err_t ret = bluetooth_controller_send_notification(BLE_CTL_CHAR_VAL_TEMP, &speed_and_humidity, sizeof(speed_and_humidity));
+            esp_err_t ret = bluetooth_controller_send_notification(BLE_CTL_CHAR_VAL_TEMP, &temperature_and_humidity, sizeof(temperature_and_humidity));
             ESP_ERROR_CHECK(ret);
         }
     }
