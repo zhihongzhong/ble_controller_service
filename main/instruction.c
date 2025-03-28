@@ -24,16 +24,15 @@ esp_err_t parse_instruction(uint8_t *inst, uint16_t len)
         case INST_SPEED: 
         {
             uint8_t speed = inst_big_endian[1]; 
-            const uint8_t* mode_val = NULL;
-            uint16_t length = 0;
-            bluetooth_controller_get_attribute_value(BLE_CTL_CHAR_VAL_MODE, &length, &mode_val);
-            if( *mode_val == 0 ) 
+            const uint8_t mode_val;
+            storage_get_data_u8(STORAGE_KEY_MODE, &mode_val);
+            if( mode_val == 0 ) 
             {
                 motor_set_speed(speed); 
                 storage_set_data_u8(STORAGE_KEY_SPEED, speed);
                 bluetooth_controller_set_attribute_value(BLE_CTL_CHAR_VAL_SPEED, sizeof(uint8_t), &speed);
             }
-            if( is_bluetooth_controller_initialized() && *mode_val == 0 ) 
+            if( is_bluetooth_controller_initialized() && mode_val == 0 ) 
             {
                 bluetooth_controller_send_notification(BLE_CTL_CHAR_VAL_SPEED, &speed, sizeof( uint8_t ));
             }
