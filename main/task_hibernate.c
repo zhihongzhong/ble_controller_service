@@ -27,12 +27,12 @@ void hibernate_task(void *arg)
     for(; i > 0; i-- )
     {
         ESP_LOGI(GATTS_TABLE_TAG, "Hibernate in %d seconds", i);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
         if( is_countdown_enabled() ) 
         {
             // send notification to bluetoothe client; 
             bluetooth_controller_send_notification(BLE_CTL_CHAR_VAL_COUNTDOWN, (uint8_t*)&i, sizeof(uint16_t));
         }
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
     bluetooth_controller_send_notification(BLE_CTL_CHAR_VAL_COUNTDOWN, (uint8_t*)i, sizeof(uint16_t));
     xTaskCreate(hibernate_system, "hibernate_system", 2048, NULL, 10, NULL);

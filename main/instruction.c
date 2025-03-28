@@ -43,6 +43,7 @@ esp_err_t parse_instruction(uint8_t *inst, uint16_t len)
         {
             uint8_t mode = inst_big_endian[1]; 
             storage_set_data_u8(STORAGE_KEY_MODE, mode);
+            ESP_LOGI(GATTS_TABLE_TAG, "set mode = %d", mode);
             bluetooth_controller_set_attribute_value(BLE_CTL_CHAR_VAL_MODE, sizeof(uint8_t), &mode);
             bluetooth_controller_send_notification(BLE_CTL_CHAR_VAL_MODE, &mode, sizeof( uint8_t ));
             if( mode == 0 ) 

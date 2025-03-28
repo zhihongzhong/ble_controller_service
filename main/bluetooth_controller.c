@@ -100,7 +100,7 @@ esp_err_t create_gatts_attr_db(esp_gatts_attr_db_t** gatt_db)
 {
     uint8_t speed_val;
     uint8_t mode_val;
-    uint8_t temp_val = 0;
+    uint16_t temp_val = 0;
     uint8_t speed_client_conf[2] = {0x00, 0x00}; 
     uint8_t mode_client_conf[2] = {0x00, 0x00}; 
     uint8_t temp_client_conf[2] = {0x000, 0x000};
@@ -113,9 +113,10 @@ esp_err_t create_gatts_attr_db(esp_gatts_attr_db_t** gatt_db)
     if( ret != ESP_OK )
     {
         // fallback speed value 
-        speed_val = 128; 
+        speed_val = 90; 
     }
     ret = storage_get_data_u8(STORAGE_KEY_MODE, &mode_val);
+    ESP_LOGI(GATTS_TABLE_TAG, "mode_val = %d", mode_val);
     if( ret != ESP_OK )
     {
         // fallback mode value 
@@ -432,10 +433,9 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                     uint16_t conf = param->write.value[1] << 8 | param->write.value[0];
                     if( conf > 0x00 ) 
                     {
-                        const uint8_t *mode_val; 
-                        uint16_t len; 
-                        bluetooth_controller_get_attribute_value(BLE_CTL_CHAR_VAL_MODE, &len, &mode_val); 
-                        bluetooth_controller_send_notification(BLE_CTL_CHAR_VAL_MODE, (uint8_t*)mode_val, len); 
+                        const uint8_t mode_val; 
+                        storage_get_data_u8(STORAGE_KEY_MODE, &mode_val);
+                        bluetooth_controller_send_notification(BLE_CTL_CHAR_VAL_MODE, &mode_val, sizeof(uint8_t)); 
                     }
                     break; 
                 }
